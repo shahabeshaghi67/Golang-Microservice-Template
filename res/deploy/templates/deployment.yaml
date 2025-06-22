@@ -1,0 +1,88 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    application: "{{{APPLICATION_ID}}}"
+    environment: "{{{ENVIRONMENT}}}"
+    component: "{{{COMPONENT}}}"
+  name: "{{{APPLICATION}}}"
+  namespace: "{{{NAMESPACE}}}"
+  annotations:
+    janitor/ttl: "{{{RESOURCE_TTL}}}"
+spec:
+  replicas: {{{REPLICAS}}}
+  selector:
+    matchLabels:
+      application: "{{{APPLICATION_ID}}}"
+      environment: "{{{ENVIRONMENT}}}"
+  template:
+    metadata:
+      labels:
+        application: "{{{APPLICATION_ID}}}"
+        version: "{{{CDP_BUILD_VERSION}}}"
+        environment: "{{{ENVIRONMENT}}}"
+        component: "{{{COMPONENT}}}"
+      annotations:
+        kubernetes-log-watcher/scalyr-parser: '[{"container": "{{{APPLICATION}}}", "parser": "escapedJson"}]'
+        janitor/ttl: "{{{RESOURCE_TTL}}}"
+    spec:
+      tolerations:
+        - key: aws.amazon.com/spot
+          operator: Exists
+      containers:
+        - name: "{{{APPLICATION}}}"
+          image: "{{{IMAGE}}}"
+          env:
+            - name: ENVIRONMENT
+              value: "{{{ENVIRONMENT}}}"
+            - name: BASE_URL
+              value: "https://{{{DOMAIN}}}/api"
+            - name: TOKENINFO_URL
+              value: "{{{TOKENINFO_URL}}}"
+            - name: CREDENTIALS_DIR
+              value: "{{{CREDENTIALS_DIR}}}"
+            - name: EVENT_BUS_REVERSER_SCOPE
+              value: "{{{EVENT_BUS_REVERSER_SCOPE}}}"
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: "{{{DB_SECRET}}}"
+                  key: password
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: "{{{DB_SECRET}}}"
+                  key: username
+            - name: DB_NAME
+              value: "{{{DB_NAME}}}"
+            - name: DB_HOST
+              value: "{{{DB_HOST}}}"
+            - name: DB_LOAD_FIXTURES
+              value: "{{{DB_LOAD_FIXTURES}}}"
+            - name: DB_LOG_QUERIES
+              value: "{{{DB_LOG_QUERIES}}}"
+            - name: DB_SSLMODE
+              value: "{{{DB_SSLMODE}}}"
+            - name: DB_MIGRATE_UP
+              value: "{{{DB_MIGRATE_UP}}}"
+            - name: HTTP_CLIENT_MIN_RETRY_INTERVAL
+              value: "{{{HTTP_CLIENT_MIN_RETRY_INTERVAL}}}"
+            - name: HTTP_CLIENT_MAX_RETRY_INTERVAL
+              value: "{{{HTTP_CLIENT_MAX_RETRY_INTERVAL}}}"
+            - name: HTTP_CLIENT_RETRY_TIMEOUT
+              value: "{{{HTTP_CLIENT_RETRY_TIMEOUT}}}"
+            - name: HTTP_CLIENT_REQUEST_TIMEOUT
+              value: "{{{HTTP_CLIENT_REQUEST_TIMEOUT}}}"
+          resources:
+            requests:
+              cpu: "{{{LIMIT_CPU}}}"
+              memory: "{{{LIMIT_RAM}}}"
+            limits:
+              cpu: "{{{LIMIT_CPU}}}"
+              memory: "{{{LIMIT_RAM}}}"
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080

@@ -1,0 +1,56 @@
+issues:
+  exclude-rules:
+    - text: "G104: Errors unhandled"
+      linters:
+        - gosec
+    - path: 'credentials/token_loader'
+      text: 'G304: Potential file inclusion via variable'
+      linters:
+        - gosec
+    - path: 'testutils'
+      text: 'G304: Potential file inclusion via variable'
+      linters:
+        - gosec
+    - text: 'ST1000: at least one file in a package should have a package comment'
+      linters:
+        - stylecheck
+    - text: 'package-comments'
+      linters:
+        - revive
+  exclude-use-default: false
+
+linters:
+  disable-all: true
+  enable:
+    - bodyclose
+    - cyclop
+    - goconst
+    - godox
+    - gofmt
+    - goimports
+    - revive
+    - gosec
+    - gosimple
+    - govet
+    - ineffassign
+    - godot
+    - misspell
+    - prealloc
+    - staticcheck
+    - stylecheck
+    - typecheck
+    - unconvert
+    - unparam
+    - unused
+    - whitespace
+
+linters-settings:
+  cyclop:
+    max-complexity: 20
+
+run:
+  build-tags:
+    - integration
+  timeout: 10m
+  modules-download-mode: readonly
+  go: '1.21'
