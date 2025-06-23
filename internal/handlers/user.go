@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -71,6 +73,11 @@ func (h *UserHandler) GetUserByID() http.Handler {
 
 		user, err := h.UserService.GetByID(r.Context(), id)
 		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				h.logger.Log("err", fmt.Sprintf("user not found: %s", id))
+				http.Error(w, "user not found", http.StatusNotFound)
+				return
+			}
 			h.logger.Log("err", fmt.Sprintf("failed to get user by ID: %+v", err))
 			http.Error(w, "failed to get user by ID", http.StatusInternalServerError)
 			return

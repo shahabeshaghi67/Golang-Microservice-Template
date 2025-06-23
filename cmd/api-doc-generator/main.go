@@ -5,8 +5,8 @@ import (
 	"os"
 
 	"github.com/go-kit/log/level"
+	"github.com/swaggest/openapi-go"
 	"github.com/swaggest/openapi-go/openapi3"
-	"github.com/swaggest/rest/gorillamux"
 
 	"github.com/shahabeshaghi67/Golang-Microservice-Template/internal/app"
 	"github.com/shahabeshaghi67/Golang-Microservice-Template/internal/config"
@@ -20,7 +20,7 @@ func main() {
 	cfg := config.Load()
 
 	app := app.NewApp(cfg, logger, true)
-	router, err := app.Wire()
+	_, err := app.Wire()
 	if err != nil {
 		_ = level.Error(logger).Log("msg", "app wiring failed", "error:", err)
 		panic(err)
@@ -28,12 +28,15 @@ func main() {
 
 	// Setup OpenAPI schema.
 
+	reflector := openapi3.Reflector{}
+	reflector.Spec = &openapi3.Spec{Openapi: "3.0.3"}
+
 	productionDescription := "production server"
 	stagingDescription := "staging server"
 	refl := openapi3.NewReflector()
-	refl.Spec.SetTitle("golang API service") // ATTENTION: add title
-	refl.Spec.SetVersion("0.0.1")
-	refl.Spec.SetDescription("golang API service handles users Data") // ATTENTION: add description
+	refl.Spec.Info.WithTitle("golang API service").
+		WithVersion("0.0.1").
+		WithDescription("golang API service handles users Data") // ATTENTION: add description
 	refl.Spec.WithServers(
 		openapi3.Server{
 			URL:         "https://production.example.com",
@@ -80,11 +83,30 @@ func main() {
 	refl.Spec.Info.MapOfAnything["x-audience"] = ""
 	refl.Spec.Info.MapOfAnything["x-api-id"] = "" //ATTENTION: add api id
 
-	// Walk the router with OpenAPI collector.
-	c := gorillamux.NewOpenAPICollector(refl)
-	err = router.Walk(c.Walker)
-	if err != nil {
-		panic(fmt.Sprintf("Unable to get api schemas: %v", err))
+	for _, route := range app.Routes {
+		op, err := reflector.NewOperationContext(route.Method, route.Path)
+		if err != nil {
+			panic(fmt.Sprintf("Unable to create operation context for %s %s: %v", route.Method, route.Path, err))
+		}
+		for _, tag := range route.Tags {
+			op.SetTags(tag)
+		}
+		if route.Summary != "" {
+			op.SetSummary(route.Summary)
+		}
+		if route.Description != "" {
+			op.SetDescription(route.Description)
+		}
+		if route.RequestType != nil {
+			op.AddReqStructure(route.RequestType)
+		}
+		for _, resp := range route.ResponseType {
+			op.AddRespStructure(resp.Body, func(cu *openapi.ContentUnit) { cu.HTTPStatus = resp.StatusCode })
+		}
+		op.SetIsDeprecated(route.Deprecated)
+		op.AddSecurity(route.SecurityName, route.SecurityScopes...)
+
+		refl.AddOperation(op)
 	}
 
 	// Get the resulting schema.

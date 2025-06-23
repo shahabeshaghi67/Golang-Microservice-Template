@@ -3,47 +3,48 @@ package api
 import (
 	"net/http"
 
-	"github.com/swaggest/openapi-go"
+	"github.com/go-playground/validator/v10"
+
+	"github.com/shahabeshaghi67/Golang-Microservice-Template/internal/utils"
 )
+
+var (
+	routeValidator *validator.Validate
+)
+
+func init() {
+	v := validator.New()
+	v.RegisterTagNameFunc(utils.JsonTagName)
+	routeValidator = v
+}
 
 // API is a struct that holds all the information needed to create a new API endpoint.
 type API struct {
-	Path           string
-	Handler        http.Handler
-	Method         string
-	RequestType    any
-	ResponseType   any
+	Path           string            `validate:"required,uri"`
+	Handler        http.Handler      `validate:"required"`
+	Method         string            `validate:"required,oneof=GET POST PUT DELETE PATCH OPTIONS HEAD TRACE CONNECT"`
+	RequestType    any               `validate:"-"`
+	ResponseType   []APIResponseType `validate:"required,dive"`
 	Tags           []string
 	Summary        string
 	Description    string
 	SecurityName   string
 	SecurityScopes []string
+	Deprecated     bool
 }
 
-// SetupOpenAPIOperation declares OpenAPI schema for the handler.
-func (a *API) SetupOpenAPIOperation(oc openapi.OperationContext) error {
-	for _, tag := range a.Tags {
-		oc.SetTags(tag)
-	}
-	if a.Summary != "" {
-		oc.SetSummary(a.Summary)
-	}
-	if a.Description != "" {
-		oc.SetDescription(a.Description)
-	}
-	if a.RequestType != nil {
-		oc.AddReqStructure(a.RequestType)
-	}
-	if a.ResponseType != nil {
-		oc.AddRespStructure(a.ResponseType)
-	}
-
-	oc.AddSecurity(a.SecurityName, a.SecurityScopes...)
-
-	return nil
+// APIResponseType is a struct that holds the response type for an API endpoint.
+type APIResponseType struct {
+	StatusCode int `validate:"required,oneof=100 101 200 201 202 204 400 401 403 404 405 409 422 500"`
+	Body       any `validate:"-"`
 }
 
 // ServeHTTP is wrapper for calling handler method.
 func (a *API) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	a.Handler.ServeHTTP(w, r)
+}
+
+// Validate is used to check if struct fields meet data requirements.
+func (a *API) Validate() error {
+	return routeValidator.Struct(a)
 }

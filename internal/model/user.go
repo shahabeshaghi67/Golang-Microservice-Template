@@ -3,16 +3,18 @@ package model
 import (
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
+
+	"github.com/shahabeshaghi67/Golang-Microservice-Template/internal/utils"
 )
 
 var (
-	UserValidator *validator.Validate
+	userValidator *validator.Validate
 )
 
 func init() {
 	v := validator.New()
-	v.RegisterTagNameFunc(jsonTagName)
-	UserValidator = v
+	v.RegisterTagNameFunc(utils.JsonTagName)
+	userValidator = v
 }
 
 // User holds data for the user (this is a test model).
@@ -24,5 +26,5 @@ type User struct {
 
 // Validate is used to check if struct fields meet data requirements.
 func (so *User) Validate() error {
-	return UserValidator.Struct(so)
+	return userValidator.Struct(so)
 }

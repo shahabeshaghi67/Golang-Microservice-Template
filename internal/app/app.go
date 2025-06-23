@@ -32,7 +32,7 @@ type App struct {
 	router           *mux.Router
 	fakeDependencies bool
 	handlers         map[string]http.Handler
-	routes           []*api.API
+	Routes           []*api.API
 }
 
 // NewApp creates a new application.
@@ -68,6 +68,11 @@ func (a *App) Wire() (*mux.Router, error) {
 		"users.getByID": handlers.NewUserHandler(userService, a.logger).GetUserByID(),
 	}
 
+	a.Routes, err = a.generateRoutes()
+	if err != nil {
+		return nil, err
+	}
+
 	router := mux.NewRouter()
 	router = a.addHealthRoute(router)
 	a.router = a.addBusinessRoutes(router)
@@ -82,7 +87,7 @@ func (a *App) addHealthRoute(router *mux.Router) *mux.Router {
 
 // addHealthRoute adds protected business routes on top.
 func (a *App) addBusinessRoutes(router *mux.Router) *mux.Router {
-	router.PathPrefix("/").Handler(newBusinessRouter(a.generateRoutes()))
+	router.PathPrefix("/").Handler(newBusinessRouter(a.Routes))
 	return router
 }
 

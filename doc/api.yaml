@@ -1,0 +1,92 @@
+openapi: 3.0.3
+info:
+  contact:
+    email: ""
+    name: ""
+    url: ""
+  description: golang API service handles users Data
+  title: golang API service
+  version: 0.0.1
+  x-api-id: ""
+  x-audience: ""
+servers:
+- description: production server
+  url: https://production.example.com
+- description: staging server
+  url: https://staging.example.com
+paths:
+  /users:
+    post:
+      deprecated: false
+      description: Validates and creates a new user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModelUser'
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelUser'
+          description: Created
+        "400":
+          description: Bad Request
+        "422":
+          description: Unprocessable Entity
+      security:
+      - "": []
+      summary: Validates and creates a new user
+      tags:
+      - user
+  /users/{id}:
+    get:
+      deprecated: false
+      description: Get user by ID
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelUser'
+          description: OK
+        "400":
+          description: Bad Request
+        "404":
+          description: Not Found
+      security:
+      - "": []
+      summary: Get user by ID
+      tags:
+      - user
+components:
+  schemas:
+    ModelUser:
+      properties:
+        created_at:
+          format: date-time
+          type: string
+        id:
+          type: string
+        name:
+          type: string
+        updated_at:
+          format: date-time
+          type: string
+      type: object
+  securitySchemes:
+    OAuth2:
+      description: 'Note: In addition to the required scopes services accessing this
+        API must be explicitly allowed. Please make contact directly if you need aservice
+        to be added to the allowed list.'
+      flows:
+        clientCredentials:
+          tokenUrl: ""
+      type: oauth2
